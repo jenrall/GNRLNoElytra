@@ -1,0 +1,18 @@
+settings:
+  # جلوگیری از پوشیدن الایترا
+  prevent-equip: true
+
+  # جلوگیری از استفاده (گلاید کردن)
+  prevent-glide: true
+
+  # حذف الایترا از اینونتوری
+  remove-from-inventory: true
+
+  # حذف الایتراهای دراپ شده روی زمین
+  remove-dropped: true
+
+  # پیام‌ها
+  messages:
+    equip-denied: "<red>✖ نمی‌تونی الایترا بپوشی!</red>"
+    glide-denied: "<red>✖ نمی‌تونی از الایترا استفاده کنی!</red>"
+    elytra-removed: "<red>✖ الایترا از اینونتوریت حذف شد!</red>"
