@@ -1,0 +1,20 @@
+name: GNRLNoElytra
+version: 1.0.0
+main: com.gnrl.noelytra.GNRLNoElytra
+api-version: '1.21'
+description: Disable elytra usage and remove them
+author: GNRLFlawless
+
+commands:
+  noelytra:
+    description: Reload the plugin
+    usage: /noelytra reload
+    aliases: [gnrlnoelytra]
+
+permissions:
+  gnrlnoelytra.bypass:
+    description: Bypass elytra restrictions
+    default: op
+  gnrlnoelytra.admin:
+    description: Admin commands
+    default: op
