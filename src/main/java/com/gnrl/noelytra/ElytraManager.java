@@ -22,9 +22,13 @@ public class ElytraManager {
     }
 
     // ═══════════ حذف الایترا از اینونتوری بازیکن ═══════════
+    // ولی اگه در حال گلاید باشه، حذف نکن
 
     public void removeElytraFromInventory(Player player) {
         if (!plugin.getConfig().getBoolean("settings.remove-from-inventory", true)) return;
+
+        // اگه در حال گلاید کردنه، الایترا رو حذف نکن
+        if (player.isGliding()) return;
 
         boolean removed = false;
 
