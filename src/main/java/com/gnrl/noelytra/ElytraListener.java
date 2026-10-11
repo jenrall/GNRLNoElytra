@@ -30,10 +30,10 @@ public class ElytraListener implements Listener {
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onGlide(EntityToggleGlideEvent event) {
         if (!(event.getEntity() instanceof Player player)) return;
-        if (player.hasPermission("gnrlnoelytra.bypass")) return;
 
         if (event.isGliding() && plugin.getConfig().getBoolean("settings.prevent-glide", true)) {
             event.setCancelled(true);
+            player.setGliding(false);
             player.sendRichMessage(plugin.getConfig().getString("settings.messages.glide-denied", ""));
             player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_BASS, 1f, 0.5f);
         }
@@ -44,15 +44,14 @@ public class ElytraListener implements Listener {
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onInventoryClick(InventoryClickEvent event) {
         if (!(event.getWhoClicked() instanceof Player player)) return;
-        if (player.hasPermission("gnrlnoelytra.bypass")) return;
 
         if (!plugin.getConfig().getBoolean("settings.prevent-equip", true)) return;
 
         ItemStack clicked = event.getCurrentItem();
         if (clicked == null || clicked.getType() != Material.ELYTRA) return;
 
-        // اگه داره توی اسلات سینه می‌ذاره
-        if (event.getSlot() == 38) { // اسلات سینه توی اینونتوری
+        // اگه داره توی اسلات سینه می‌ذاره (اسلات 38)
+        if (event.getSlot() == 38) {
             event.setCancelled(true);
             player.sendRichMessage(plugin.getConfig().getString("settings.messages.equip-denied", ""));
             player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_BASS, 1f, 0.5f);
@@ -64,10 +63,13 @@ public class ElytraListener implements Listener {
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onInteract(PlayerInteractEvent event) {
         Player player = event.getPlayer();
-        if (player.hasPermission("gnrlnoelytra.bypass")) return;
 
         if (event.getItem() != null && event.getItem().getType() == Material.ELYTRA) {
             event.setCancelled(true);
+            // حذف از دست
+            player.getInventory().setItemInMainHand(null);
+            player.getInventory().setItemInOffHand(null);
+            player.updateInventory();
         }
     }
 
@@ -76,7 +78,6 @@ public class ElytraListener implements Listener {
     @EventHandler
     public void onJoin(PlayerJoinEvent event) {
         Player player = event.getPlayer();
-        if (player.hasPermission("gnrlnoelytra.bypass")) return;
 
         // تاخیر ۱ ثانیه‌ای برای اطمینان از لود شدن اینونتوری
         plugin.getServer().getScheduler().runTaskLater(plugin,
@@ -88,7 +89,6 @@ public class ElytraListener implements Listener {
     @EventHandler
     public void onItemHeld(PlayerItemHeldEvent event) {
         Player player = event.getPlayer();
-        if (player.hasPermission("gnrlnoelytra.bypass")) return;
 
         ItemStack item = player.getInventory().getItem(event.getNewSlot());
         if (item != null && item.getType() == Material.ELYTRA) {
@@ -102,24 +102,27 @@ public class ElytraListener implements Listener {
 
     @EventHandler
     public void onDrop(PlayerDropItemEvent event) {
-        Player player = event.getPlayer();
-        if (player.hasPermission("gnrlnoelytra.bypass")) return;
-
         if (event.getItemDrop().getItemStack().getType() == Material.ELYTRA) {
             event.getItemDrop().remove();
         }
     }
 
-    // ═══════════ حذف الایترا موقع حرکت (برای اطمینان) ═══════════
+    // ═══════════ حذف الایترا موقع حرکت ═══════════
 
     @EventHandler
     public void onMove(PlayerMoveEvent event) {
         Player player = event.getPlayer();
-        if (player.hasPermission("gnrlnoelytra.bypass")) return;
 
-        // فقط اگه داره گلاید می‌کنه
+        // اگه در حال گلاید باشه، متوقفش کن
         if (player.isGliding()) {
             player.setGliding(false);
+        }
+
+        // اگه الایترا توی اسلات سینه داره، حذفش کن
+        ItemStack chestplate = player.getInventory().getChestplate();
+        if (chestplate != null && chestplate.getType() == Material.ELYTRA) {
+            player.getInventory().setChestplate(null);
+            player.updateInventory();
         }
     }
 }
