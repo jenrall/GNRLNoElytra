@@ -1,19 +1,16 @@
 package com.gnrl.noelytra;
 
 import org.bukkit.Material;
-import org.bukkit.Sound;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
-import org.bukkit.event.entity.EntityToggleGlideEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
-import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.event.inventory.InventoryCloseEvent;
+import org.bukkit.event.player.PlayerDropItemEvent;
 import org.bukkit.event.player.PlayerItemHeldEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
-import org.bukkit.event.player.PlayerMoveEvent;
-import org.bukkit.event.player.PlayerDropItemEvent;
-import org.bukkit.event.player.PlayerToggleSneakEvent;
+import org.bukkit.event.player.PlayerPickupItemEvent;
 import org.bukkit.inventory.ItemStack;
 
 public class ElytraListener implements Listener {
@@ -26,58 +23,6 @@ public class ElytraListener implements Listener {
         this.manager = manager;
     }
 
-    // ═══════════ جلوگیری از گلاید کردن (اختیاری) ═══════════
-    // اگه می‌خوای کلاً گلاید غیرفعال باشه، این رو نگه دار
-    // اگه می‌خوای یه بار بتونه استفاده کنه، این رو کامنت کن
-
-    @EventHandler(priority = EventPriority.HIGHEST)
-    public void onGlide(EntityToggleGlideEvent event) {
-        if (!(event.getEntity() instanceof Player player)) return;
-
-        // ═══ این شرط رو کامنت کن اگه می‌خوای گلاید فعال بمونه ═══
-        // if (event.isGliding() && plugin.getConfig().getBoolean("settings.prevent-glide", true)) {
-        //     event.setCancelled(true);
-        //     player.setGliding(false);
-        //     player.sendRichMessage(plugin.getConfig().getString("settings.messages.glide-denied", ""));
-        // }
-    }
-
-    // ═══════════ جلوگیری از پوشیدن الایترا ═══════════
-
-    @EventHandler(priority = EventPriority.HIGHEST)
-    public void onInventoryClick(InventoryClickEvent event) {
-        if (!(event.getWhoClicked() instanceof Player player)) return;
-
-        if (!plugin.getConfig().getBoolean("settings.prevent-equip", true)) return;
-
-        ItemStack clicked = event.getCurrentItem();
-        if (clicked == null || clicked.getType() != Material.ELYTRA) return;
-
-        // اگه داره توی اسلات سینه می‌ذاره (اسلات 38)
-        if (event.getSlot() == 38) {
-            event.setCancelled(true);
-            player.sendRichMessage(plugin.getConfig().getString("settings.messages.equip-denied", ""));
-            player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_BASS, 1f, 0.5f);
-        }
-    }
-
-    // ═══════════ جلوگیری از تعامل با الایترا ═══════════
-
-    @EventHandler(priority = EventPriority.HIGHEST)
-    public void onInteract(PlayerInteractEvent event) {
-        Player player = event.getPlayer();
-
-        // اگه در حال گلاید کردنه، کاری نکن
-        if (player.isGliding()) return;
-
-        if (event.getItem() != null && event.getItem().getType() == Material.ELYTRA) {
-            event.setCancelled(true);
-            player.getInventory().setItemInMainHand(null);
-            player.getInventory().setItemInOffHand(null);
-            player.updateInventory();
-        }
-    }
-
     // ═══════════ حذف الایترا موقع جوین ═══════════
 
     @EventHandler
@@ -88,20 +33,38 @@ public class ElytraListener implements Listener {
                 () -> manager.removeElytraFromInventory(player), 20L);
     }
 
-    // ═══════════ حذف الایترا موقع برداشتن ═══════════
+    // ═══════════ حذف الایترا موقع برداشتن توی اینونتوری ═══════════
+
+    @EventHandler(priority = EventPriority.HIGHEST)
+    public void onInventoryClick(InventoryClickEvent event) {
+        if (!(event.getWhoClicked() instanceof Player player)) return;
+
+        // تاخیر ۱ تیک بذار تا اینونتوری آپدیت شه، بعد چک کن
+        plugin.getServer().getScheduler().runTaskLater(plugin,
+                () -> manager.removeElytraFromInventory(player), 1L);
+    }
+
+    // ═══════════ حذف الایترا موقع بستن اینونتوری ═══════════
+
+    @EventHandler
+    public void onInventoryClose(InventoryCloseEvent event) {
+        if (!(event.getPlayer() instanceof Player player)) return;
+
+        plugin.getServer().getScheduler().runTaskLater(plugin,
+                () -> manager.removeElytraFromInventory(player), 1L);
+    }
+
+    // ═══════════ حذف الایترا موقع برداشتن توی دست ═══════════
 
     @EventHandler
     public void onItemHeld(PlayerItemHeldEvent event) {
         Player player = event.getPlayer();
 
-        // اگه در حال گلاید کردنه، کاری نکن
-        if (player.isGliding()) return;
-
         ItemStack item = player.getInventory().getItem(event.getNewSlot());
         if (item != null && item.getType() == Material.ELYTRA) {
-            player.getInventory().setItem(event.getNewSlot(), null);
-            player.updateInventory();
-            player.sendRichMessage(plugin.getConfig().getString("settings.messages.elytra-removed", ""));
+            // تاخیر ۱ تیک برای اطمینان
+            plugin.getServer().getScheduler().runTaskLater(plugin,
+                    () -> manager.removeElytraFromInventory(player), 1L);
         }
     }
 
@@ -109,46 +72,28 @@ public class ElytraListener implements Listener {
 
     @EventHandler
     public void onDrop(PlayerDropItemEvent event) {
-        Player player = event.getPlayer();
-
-        // اگه در حال گلاید کردنه، کاری نکن
-        if (player.isGliding()) return;
-
         if (event.getItemDrop().getItemStack().getType() == Material.ELYTRA) {
             event.getItemDrop().remove();
         }
     }
 
-    // ═══════════ چک موقع حرکت: اگه گلاید تموم شد، الایترا رو حذف کن ═══════════
+    // ═══════════ حذف الایترا موقع برداشتن از زمین ═══════════
 
     @EventHandler
-    public void onMove(PlayerMoveEvent event) {
-        Player player = event.getPlayer();
-
-        // اگه در حال گلاید نیست ولی الایترا توی اسلات سینه داره، حذفش کن
-        if (!player.isGliding()) {
+    public void onPickup(PlayerPickupItemEvent event) {
+        if (event.getItem().getItemStack().getType() == Material.ELYTRA) {
+            // اگه روی بدنه الایترا داره، اجازه نده برداره
+            Player player = event.getPlayer();
             ItemStack chestplate = player.getInventory().getChestplate();
-            if (chestplate != null && chestplate.getType() == Material.ELYTRA) {
-                player.getInventory().setChestplate(null);
-                player.updateInventory();
-                player.sendRichMessage(plugin.getConfig().getString("settings.messages.elytra-removed", ""));
-            }
-        }
-    }
+            boolean hasElytraOnBody = chestplate != null && chestplate.getType() == Material.ELYTRA;
 
-    // ═══════════ چک موقع Sneak: اگه یارو sneak کرد، الایترا رو حذف کن ═══════════
-    // (چون sneak توی هوا = توقف گلاید)
-
-    @EventHandler
-    public void onSneak(PlayerToggleSneakEvent event) {
-        Player player = event.getPlayer();
-
-        if (event.isSneaking() && !player.isGliding()) {
-            ItemStack chestplate = player.getInventory().getChestplate();
-            if (chestplate != null && chestplate.getType() == Material.ELYTRA) {
-                player.getInventory().setChestplate(null);
-                player.updateInventory();
-                player.sendRichMessage(plugin.getConfig().getString("settings.messages.elytra-removed", ""));
+            // اگه روی بدنش الایترا داره، این یکی رو برداره (توی اینونتوری)
+            // که بعداً با removeElytraFromInventory پاک می‌شه
+            // پس اینجا کاری نکن، بذار برداره بعد حذف شه
+            if (hasElytraOnBody) {
+                // می‌تونیم لغو کنیم که کلاً برنداره
+                event.setCancelled(true);
+                event.getItem().remove();
             }
         }
     }
