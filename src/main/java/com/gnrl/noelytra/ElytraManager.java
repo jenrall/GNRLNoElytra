@@ -22,30 +22,23 @@ public class ElytraManager {
     }
 
     // ═══════════ حذف الایترا از اینونتوری بازیکن ═══════════
-    // ولی اگه در حال گلاید باشه، حذف نکن
+    // فقط از اینونتوری، نه از اسلات سینه
 
     public void removeElytraFromInventory(Player player) {
         if (!plugin.getConfig().getBoolean("settings.remove-from-inventory", true)) return;
 
-        // اگه در حال گلاید کردنه، الایترا رو حذف نکن
-        if (player.isGliding()) return;
-
         boolean removed = false;
 
-        // اینونتوری اصلی
+        // اینونتوری اصلی (به جز اسلات سینه)
         for (int i = 0; i < player.getInventory().getSize(); i++) {
+            // اسلات سینه رو رد کن (38 = اسلات chestplate)
+            if (i == 38) continue;
+
             ItemStack item = player.getInventory().getItem(i);
             if (item != null && item.getType() == Material.ELYTRA) {
                 player.getInventory().setItem(i, null);
                 removed = true;
             }
-        }
-
-        // اسلات سینه (زره)
-        ItemStack chestplate = player.getInventory().getChestplate();
-        if (chestplate != null && chestplate.getType() == Material.ELYTRA) {
-            player.getInventory().setChestplate(null);
-            removed = true;
         }
 
         // دست آف
