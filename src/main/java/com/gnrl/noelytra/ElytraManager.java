@@ -25,7 +25,6 @@ public class ElytraManager {
 
     public void removeElytraFromInventory(Player player) {
         if (!plugin.getConfig().getBoolean("settings.remove-from-inventory", true)) return;
-        if (player.hasPermission("gnrlnoelytra.bypass")) return;
 
         boolean removed = false;
 
