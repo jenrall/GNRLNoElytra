@@ -12,13 +12,13 @@ public class ElytraManager {
 
     private final GNRLNoElytra plugin;
     private BukkitTask droppedTask;
+    private BukkitTask playerCheckTask;
 
     public ElytraManager(GNRLNoElytra plugin) {
         this.plugin = plugin;
     }
 
     public void reload() {
-        // فقط config رو دوباره می‌خونیم
     }
 
     // ═══════════ حذف الایترا از اینونتوری بازیکن ═══════════
@@ -31,9 +31,7 @@ public class ElytraManager {
 
         // اینونتوری اصلی (به جز اسلات سینه)
         for (int i = 0; i < player.getInventory().getSize(); i++) {
-            // اسلات سینه رو رد کن (38 = اسلات chestplate)
-            if (i == 38) continue;
-
+            if (i == 38) continue; // اسلات سینه رو رد کن
             ItemStack item = player.getInventory().getItem(i);
             if (item != null && item.getType() == Material.ELYTRA) {
                 player.getInventory().setItem(i, null);
@@ -48,10 +46,66 @@ public class ElytraManager {
             removed = true;
         }
 
+        // هلمت (احتیاط)
+        ItemStack helmet = player.getInventory().getHelmet();
+        if (helmet != null && helmet.getType() == Material.ELYTRA) {
+            player.getInventory().setHelmet(null);
+            removed = true;
+        }
+
+        // بوت (احتیاط)
+        ItemStack boots = player.getInventory().getBoots();
+        if (boots != null && boots.getType() == Material.ELYTRA) {
+            player.getInventory().setBoots(null);
+            removed = true;
+        }
+
+        // لگ (احتیاط)
+        ItemStack leggings = player.getInventory().getLeggings();
+        if (leggings != null && leggings.getType() == Material.ELYTRA) {
+            player.getInventory().setLeggings(null);
+            removed = true;
+        }
+
         if (removed) {
             player.updateInventory();
             player.sendRichMessage(plugin.getConfig().getString("settings.messages.elytra-removed", ""));
         }
+    }
+
+    // ═══════════ تسک چک کردن همه بازیکن‌ها (هر ۰.۲۵ ثانیه) ═══════════
+
+    public void startPlayerCheckTask() {
+        // اجرای اولیه با تاخیر 0 تیک، بعد هر 5 تیک
+        playerCheckTask = Bukkit.getScheduler().runTaskTimer(plugin, () -> {
+            if (!plugin.getConfig().getBoolean("settings.remove-from-inventory", true)) return;
+
+            for (Player player : Bukkit.getOnlinePlayers()) {
+                boolean hasElytraInInv = false;
+
+                // چک اینونتوری اصلی
+                for (int i = 0; i < player.getInventory().getSize(); i++) {
+                    if (i == 38) continue;
+                    ItemStack item = player.getInventory().getItem(i);
+                    if (item != null && item.getType() == Material.ELYTRA) {
+                        hasElytraInInv = true;
+                        break;
+                    }
+                }
+
+                // چک دست آف
+                if (!hasElytraInInv) {
+                    ItemStack offHand = player.getInventory().getItemInOffHand();
+                    if (offHand.getType() == Material.ELYTRA) {
+                        hasElytraInInv = true;
+                    }
+                }
+
+                if (hasElytraInInv) {
+                    removeElytraFromInventory(player);
+                }
+            }
+        }, 5L, 5L); // هر ۵ تیک (۰.۲۵ ثانیه)
     }
 
     // ═══════════ حذف الایتراهای دراپ شده روی زمین ═══════════
@@ -70,12 +124,11 @@ public class ElytraManager {
                     }
                 }
             }
-        }, 20L, 20L); // هر ۱ ثانیه
+        }, 5L, 5L); // هر ۵ تیک
     }
 
     public void cancelTasks() {
-        if (droppedTask != null) {
-            droppedTask.cancel();
-        }
+        if (droppedTask != null) droppedTask.cancel();
+        if (playerCheckTask != null) playerCheckTask.cancel();
     }
 }
