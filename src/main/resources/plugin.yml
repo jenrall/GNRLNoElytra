@@ -12,9 +12,6 @@ commands:
     aliases: [gnrlnoelytra]
 
 permissions:
-  gnrlnoelytra.bypass:
-    description: Bypass elytra restrictions
-    default: op
   gnrlnoelytra.admin:
     description: Admin commands
     default: op
