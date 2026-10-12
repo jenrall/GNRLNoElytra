@@ -5,12 +5,12 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
+import org.bukkit.event.entity.EntityPickupItemEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.event.player.PlayerDropItemEvent;
 import org.bukkit.event.player.PlayerItemHeldEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
-import org.bukkit.event.player.PlayerPickupItemEvent;
 import org.bukkit.inventory.ItemStack;
 
 public class ElytraListener implements Listener {
@@ -28,7 +28,6 @@ public class ElytraListener implements Listener {
     @EventHandler
     public void onJoin(PlayerJoinEvent event) {
         Player player = event.getPlayer();
-
         plugin.getServer().getScheduler().runTaskLater(plugin,
                 () -> manager.removeElytraFromInventory(player), 20L);
     }
@@ -38,8 +37,6 @@ public class ElytraListener implements Listener {
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onInventoryClick(InventoryClickEvent event) {
         if (!(event.getWhoClicked() instanceof Player player)) return;
-
-        // تاخیر ۱ تیک بذار تا اینونتوری آپدیت شه، بعد چک کن
         plugin.getServer().getScheduler().runTaskLater(plugin,
                 () -> manager.removeElytraFromInventory(player), 1L);
     }
@@ -49,7 +46,6 @@ public class ElytraListener implements Listener {
     @EventHandler
     public void onInventoryClose(InventoryCloseEvent event) {
         if (!(event.getPlayer() instanceof Player player)) return;
-
         plugin.getServer().getScheduler().runTaskLater(plugin,
                 () -> manager.removeElytraFromInventory(player), 1L);
     }
@@ -59,12 +55,22 @@ public class ElytraListener implements Listener {
     @EventHandler
     public void onItemHeld(PlayerItemHeldEvent event) {
         Player player = event.getPlayer();
-
         ItemStack item = player.getInventory().getItem(event.getNewSlot());
         if (item != null && item.getType() == Material.ELYTRA) {
-            // تاخیر ۱ تیک برای اطمینان
             plugin.getServer().getScheduler().runTaskLater(plugin,
                     () -> manager.removeElytraFromInventory(player), 1L);
+        }
+    }
+
+    // ═══════════ حذف الایترا موقع برداشتن از زمین ═══════════
+
+    @EventHandler
+    public void onPickup(EntityPickupItemEvent event) {
+        if (!(event.getEntity() instanceof Player player)) return;
+        if (event.getItem().getItemStack().getType() == Material.ELYTRA) {
+            event.setCancelled(true);
+            event.getItem().remove();
+            player.sendRichMessage(plugin.getConfig().getString("settings.messages.elytra-removed", ""));
         }
     }
 
@@ -74,27 +80,6 @@ public class ElytraListener implements Listener {
     public void onDrop(PlayerDropItemEvent event) {
         if (event.getItemDrop().getItemStack().getType() == Material.ELYTRA) {
             event.getItemDrop().remove();
-        }
-    }
-
-    // ═══════════ حذف الایترا موقع برداشتن از زمین ═══════════
-
-    @EventHandler
-    public void onPickup(PlayerPickupItemEvent event) {
-        if (event.getItem().getItemStack().getType() == Material.ELYTRA) {
-            // اگه روی بدنه الایترا داره، اجازه نده برداره
-            Player player = event.getPlayer();
-            ItemStack chestplate = player.getInventory().getChestplate();
-            boolean hasElytraOnBody = chestplate != null && chestplate.getType() == Material.ELYTRA;
-
-            // اگه روی بدنش الایترا داره، این یکی رو برداره (توی اینونتوری)
-            // که بعداً با removeElytraFromInventory پاک می‌شه
-            // پس اینجا کاری نکن، بذار برداره بعد حذف شه
-            if (hasElytraOnBody) {
-                // می‌تونیم لغو کنیم که کلاً برنداره
-                event.setCancelled(true);
-                event.getItem().remove();
-            }
         }
     }
 }
